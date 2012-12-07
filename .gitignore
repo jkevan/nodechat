@@ -12,3 +12,8 @@ logs
 results
 
 npm-debug.log
+
+*.iml
+target/
+.idea/
+node_modules/
