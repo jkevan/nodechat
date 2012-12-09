@@ -5,11 +5,46 @@
 	<script>
 		var socket = io.connect('http://localhost');
 
-	</script>
+        socket.on('connect', function(){
+            socket.emit("add_user", prompt("Saisissez votre pseudo"));
+        });
 
+        socket.on('update_console', function(nickname, msg){
+            $("#console").append('<b>'+ nickname + ':</b> ' + msg + '<br>')
+        });
+
+        socket.on('update_users', function(data){
+            $('#users').empty();
+            $.each(data, function(key, value) {
+                $('#users').append('<div>' + key + '</div>');
+            });
+        });
+
+        $(function(){
+            $('#send').click( function() {
+                var msg = $('#msg').val();
+                $('#msg').val('');
+
+                socket.emit('send_msg', msg);
+            });
+
+            $('#msg').keypress(function(e) {
+                if(e.which == 13) {
+                    $(this).blur();
+                    $('#send').focus().click();
+                }
+            });
+        });
+	</script>
 </head>
 <body>
-	<p>home</p>
-</body>
+	<p id="console">
 
+	</p>
+    <div id="users">
+
+    </div>
+    <label for="msg">message: </label><input type="text" width="90" id="msg">
+    <input type="button" value="send" id="send">
+</body>
 </html>

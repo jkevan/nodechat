@@ -4,6 +4,7 @@
 	"dependencies": {
 		"flatiron": "*",
 		"socket.io": "*",
-		"union": "*"
+		"union": "*" ,
+        "mongodb": "*"
 	}
 }

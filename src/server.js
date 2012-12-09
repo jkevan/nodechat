@@ -1,6 +1,14 @@
 var flatiron = require('flatiron'),
 	app = flatiron.app,
-	fs = require('fs');
+	fs = require('fs'),
+    mongo = require('mongodb'),
+    Server = mongo.Server,
+    Db = mongo.Db;
+
+var server = new Server('localhost', 27017, {auto_reconnect: true});
+var db = new Db('talk', server);
+//talk sheme: talk = {entries = [{nickname = '', date = '', message = ''}, {}, ...], closed = true/false}
+var users = {};
 
 app.use(flatiron.plugins.http, {
 	// HTTP options
@@ -38,6 +46,37 @@ app.start(8080);
 io = require('socket.io').listen(app.server);
 
 io.sockets.on('connection', function (socket) {
-	console.log("test");
+
+    socket.on('add_user', function(nickname){
+        socket.set("nickname", nickname);
+        users[nickname] = nickname;
+        socket.emit("update_console", "SERVER", "vous êtes connecté");
+        socket.broadcast.emit("update_console", "SERVER", nickname + " est connecté");
+        io.sockets.emit('update_users', users);
+    });
+
+    socket.on('send_msg', function(data){
+        //TODO SAVE
+        socket.get('nickname', function(err, nickname){
+            if(!err){
+                io.sockets.emit('update_console', nickname, data);
+            }else{
+                console.log(err);
+            }
+        });
+    });
+
+    socket.on('disconnect', function(){
+        socket.get('nickname', function(err, nickname){
+            if(!err){
+                delete users[nickname];
+                io.sockets.emit('update_users', users);
+                socket.broadcast.emit('update_console', 'SERVER', nickname
+                    + ' s\'est déconnecté');
+            }else {
+                console.log(err);
+            }
+        });
+    });
 });
 
