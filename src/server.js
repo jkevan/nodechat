@@ -6,9 +6,27 @@ var flatiron = require('flatiron'),
     Db = mongo.Db;
 
 var server = new Server('localhost', 27017, {auto_reconnect: true});
-var db = new Db('talk', server);
-//talk sheme: talk = {entries = [{nickname = '', date = '', message = ''}, {}, ...], closed = true/false}
+var db = new Db('nodechat', server);
 var users = {};
+
+function saveMsg(nickname, msg){
+    db.collection('talk', function (err, collection) {
+        collection.findOne({closed: false}, function(err, document){
+            if(document == null){
+                collection.insert({messages: [{nickname: nickname, msg: msg}],
+                    closed: false});
+            }else {
+                collection.update({closed: false}, {$push: {messages:
+                {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
+                    //debug
+                    /*collection.findOne({closed: false}, function(err, document){
+                        console.log(document);
+                    });*/
+                });
+            }
+        });
+    });
+}
 
 app.use(flatiron.plugins.http, {
 	// HTTP options
@@ -50,15 +68,25 @@ io.sockets.on('connection', function (socket) {
     socket.on('add_user', function(nickname){
         socket.set("nickname", nickname);
         users[nickname] = nickname;
-        socket.emit("update_console", "SERVER", "vous êtes connecté");
-        socket.broadcast.emit("update_console", "SERVER", nickname + " est connecté");
-        io.sockets.emit('update_users', users);
+        db.collection('talk', function (err, collection) {
+            collection.findOne({closed: false}, function(err, document){
+                if(document != null){
+                    var oldMessages = document.messages;
+                    for(var i in oldMessages){
+                        socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
+                    }
+                    socket.emit("update_console", "SERVER", "vous êtes connecté");
+                    socket.broadcast.emit("update_console", "SERVER", nickname + " est connecté");
+                    io.sockets.emit('update_users', users);
+                }
+            });
+        });
     });
 
     socket.on('send_msg', function(data){
-        //TODO SAVE
         socket.get('nickname', function(err, nickname){
             if(!err){
+                saveMsg(nickname, data);
                 io.sockets.emit('update_console', nickname, data);
             }else{
                 console.log(err);
