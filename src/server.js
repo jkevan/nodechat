@@ -9,24 +9,7 @@ var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('nodechat', server);
 var users = {};
 
-function saveMsg(nickname, msg){
-    db.collection('talk', function (err, collection) {
-        collection.findOne({closed: false}, function(err, document){
-            if(document == null){
-                collection.insert({messages: [{nickname: nickname, msg: msg}],
-                    closed: false});
-            }else {
-                collection.update({closed: false}, {$push: {messages:
-                {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
-                    //debug
-                    /*collection.findOne({closed: false}, function(err, document){
-                        console.log(document);
-                    });*/
-                });
-            }
-        });
-    });
-}
+eval(fs.readFileSync('function.js', encoding="ascii"));
 
 app.use(flatiron.plugins.http, {
 	// HTTP options
@@ -46,7 +29,87 @@ app.router.get('/', function () {
 		});
 });
 
-app.router.get('/talk/:id', function (id) {
+function saveMsg(nickname, msg, channel){
+    db.collection('talk', function (err, collection) {
+        collection.findOne({room: channel}, function(err, document){
+            if(document == null){
+                collection.insert({messages: [{nickname: nickname, msg: msg}],
+                    closed: false, room: channel, uri: ''});
+				console.log('IN '+ channel + ' ' + nickname + 'a envoyé ' + msg);
+            }else {
+                collection.update({room: channel}, {$push: {messages:
+                {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
+					console.log('UP '+ channel + ' ' + nickname + 'a envoyé ' + msg);
+                });
+            }
+        });
+    });
+}
+
+function closeTalk(channel){
+    db.collection('talk', function (err, collection) {
+        collection.findOne({room: channel}, function(err, document){
+            if(document != null){
+				var uri_ = findTextUri(document.messages);
+				if(uri_)
+				{
+					collection.update({room: channel}, {closed: true, uri:uri_}, {safe: true},  function(err, doc){
+						console.log('Fermeture de la room '+ channel);
+						console.log('l uri de ' + channel + ' est ' + uri_);
+					});
+					io.sockets.in(channel).emit("update_console", "SERVER", "La room " + channel + " est close. Retrouvez l'historique de la discussion à l'adresse suivante : <a href=\"/room/" + uri_ + "\">/room/" + uri_+ "</a>");
+				}
+				else
+					console.log('Impossible de générer l uri, aucunes phrases suppérieur à 5 mots.');
+            }
+        });
+    });
+}
+
+app.start(8080);
+io = require('socket.io').listen(app.server);
+
+io.sockets.on('connection', function (socket) {
+
+    socket.on('add_user', function(nickname, channel){
+        socket.set("nickname", nickname);
+		users[nickname] = nickname;
+		socket.join(channel);
+        db.collection('talk', function (err, collection) {
+            collection.findOne({room:channel}, function(err, document){
+                if(document != null){
+                    var oldMessages = document.messages;
+                    for(var i in oldMessages){
+                        socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
+                    }
+					console.log('add_user' + channel);
+					//sockets.emit("update_console", "SERVER", "vous êtes connecté");
+					io.sockets.in(channel).emit("update_console", "SERVER", nickname + " est connecté");
+                    //io.sockets.emit('update_users', io.sockets.clients(channel));
+                }
+            });
+        });
+    });
+
+    socket.on('send_msg', function(data, room){
+        socket.get('nickname', function(err, nickname){
+            if(!err){
+				if(data != "quit")
+				{
+					saveMsg(nickname, data, room);
+					io.sockets.in(room).emit('update_console', nickname, data);
+					console.log('send msg' + room);
+				}
+				else
+					closeTalk(room);
+            }else{
+                console.log(err);
+				console.log('fail');
+            }
+        });
+    });
+
+   app.router.get('/room/:uri_', function (uri_) {
 	var self = this;
 	fs.readFile('html/talk.html',
 		function (err, data) {
@@ -60,41 +123,7 @@ app.router.get('/talk/:id', function (id) {
 		});
 });
 
-app.start(8080);
-io = require('socket.io').listen(app.server);
-
-io.sockets.on('connection', function (socket) {
-
-    socket.on('add_user', function(nickname){
-        socket.set("nickname", nickname);
-        users[nickname] = nickname;
-        db.collection('talk', function (err, collection) {
-            collection.findOne({closed: false}, function(err, document){
-                if(document != null){
-                    var oldMessages = document.messages;
-                    for(var i in oldMessages){
-                        socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
-                    }
-                    socket.emit("update_console", "SERVER", "vous êtes connecté");
-                    socket.broadcast.emit("update_console", "SERVER", nickname + " est connecté");
-                    io.sockets.emit('update_users', users);
-                }
-            });
-        });
-    });
-
-    socket.on('send_msg', function(data){
-        socket.get('nickname', function(err, nickname){
-            if(!err){
-                saveMsg(nickname, data);
-                io.sockets.emit('update_console', nickname, data);
-            }else{
-                console.log(err);
-            }
-        });
-    });
-
-    socket.on('disconnect', function(){
+ socket.on('disconnect', function(){
         socket.get('nickname', function(err, nickname){
             if(!err){
                 delete users[nickname];
@@ -106,5 +135,8 @@ io.sockets.on('connection', function (socket) {
             }
         });
     });
+
 });
+
+
 

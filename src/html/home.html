@@ -4,9 +4,21 @@
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.2.js"></script>
 	<script>
 		var socket = io.connect('http://localhost');
-
+		var connected = false;
+		var room;
+		var nick;
         socket.on('connect', function(){
-            socket.emit("add_user", prompt("Saisissez votre pseudo"));
+			$("#console").text("");
+			if(!connected)
+			{
+				do{
+					nick = prompt("Saisissez votre pseudo");
+					room = prompt("Saisissez votre ChatRoom");
+				}while(!nick && !room)
+				socket.emit("add_user", nick, room);
+				connected = true;
+				$("#send").removeAttr("disabled");
+			}
         });
 
         socket.on('update_console', function(nickname, msg){
@@ -25,7 +37,7 @@
                 var msg = $('#msg').val();
                 $('#msg').val('');
 
-                socket.emit('send_msg', msg);
+                socket.emit('send_msg', msg, room);
             });
 
             $('#msg').keypress(function(e) {
@@ -45,6 +57,6 @@
 
     </div>
     <label for="msg">message: </label><input type="text" width="90" id="msg">
-    <input type="button" value="send" id="send">
+    <input type="button" value="send" id="send" disabled>
 </body>
 </html>
