@@ -24,7 +24,7 @@ findTextUri = function(messages){
 	return "";
 }
 
-userExist(users, nickname){
+function userExist(users, nickname){
 	for(var room in users)
 	{
 		for(var user in room)
