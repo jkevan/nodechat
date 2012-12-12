@@ -1,4 +1,4 @@
-var flatiron = require('flatiron'),
+﻿var flatiron = require('flatiron'),
 	app = flatiron.app,
 	fs = require('fs'),
     mongo = require('mongodb'),
@@ -7,7 +7,7 @@ var flatiron = require('flatiron'),
 
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('nodechat', server);
-var users = {};
+var users = new Array();
 
 eval(fs.readFileSync('function.js', encoding="ascii"));
 
@@ -28,23 +28,6 @@ app.router.get('/', function () {
 			self.res.end(data);
 		});
 });
-
-function saveMsg(nickname, msg, channel){
-    db.collection('talk', function (err, collection) {
-        collection.findOne({room: channel}, function(err, document){
-            if(document == null){
-                collection.insert({messages: [{nickname: nickname, msg: msg}],
-                    closed: false, room: channel, uri: ''});
-				console.log('IN '+ channel + ' ' + nickname + 'a envoyé ' + msg);
-            }else {
-                collection.update({room: channel}, {$push: {messages:
-                {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
-					console.log('UP '+ channel + ' ' + nickname + 'a envoyé ' + msg);
-                });
-            }
-        });
-    });
-}
 
 function closeTalk(channel){
     db.collection('talk', function (err, collection) {
@@ -73,16 +56,15 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('add_user', function(nickname, channel){
         socket.set("nickname", nickname);
-		users[nickname] = nickname;
-		socket.join(channel);
+		joinRoom(nickname, channel, socket);
         db.collection('talk', function (err, collection) {
-            collection.findOne({room:channel}, function(err, document){
+            collection.findOne({room:channel}, function(err, document){ // Voir pour changer ID
                 if(document != null){
                     var oldMessages = document.messages;
                     for(var i in oldMessages){
                         socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
                     }
-					console.log('add_user' + channel);
+					console.log('add_user ' + channel);
 					//sockets.emit("update_console", "SERVER", "vous êtes connecté");
 					io.sockets.in(channel).emit("update_console", "SERVER", nickname + " est connecté");
                     //io.sockets.emit('update_users', io.sockets.clients(channel));
@@ -94,14 +76,55 @@ io.sockets.on('connection', function (socket) {
     socket.on('send_msg', function(data, room){
         socket.get('nickname', function(err, nickname){
             if(!err){
-				if(data != "quit")
+				if(data.startsWith("/join"))
+				{
+					joinRoom(nickname, data.split(" ", 2), socket);
+				}
+				else if(data.startsWith("/quit"))
+				{
+					socket.get('room', function(err, room){
+						console.log('P'+room+"P");
+					});
+					var ch = data.split(" ", 2);
+					if(ch[1])
+					{
+						
+						console.log(nickname + ' a quitter la room ' + ch[1]);
+						var rooms = io.sockets.manager.roomClients[socket.id];
+						console.log('before');
+						for(var i in rooms){
+							console.log(''+i);
+						}
+						socket.leave(ch[1]);
+						console.log('after');
+						for(var i in rooms){
+							console.log(''+i);
+						}
+					}
+					else
+					{
+						console.log(nickname + ' a quitter la room ' + room);
+						var rooms = io.sockets.manager.roomClients[socket.id];
+						console.log('before :' + rooms +':');
+						for(var i in rooms){
+							console.log(':'+i+':');
+						}
+						socket.leave(room);
+						console.log('after :' + rooms +':');
+						for(var i in rooms){
+							console.log(':'+i+':');
+						}
+						//socket.leave(room);
+						//console.log(nickname + ' a quitter la room ' + room);
+					}
+				}
+				else
 				{
 					saveMsg(nickname, data, room);
 					io.sockets.in(room).emit('update_console', nickname, data);
 					console.log('send msg' + room);
 				}
-				else
-					closeTalk(room);
+					//closeTalk(room);
             }else{
                 console.log(err);
 				console.log('fail');
@@ -126,7 +149,7 @@ io.sockets.on('connection', function (socket) {
  socket.on('disconnect', function(){
         socket.get('nickname', function(err, nickname){
             if(!err){
-                delete users[nickname];
+               // delete users[nickname];
                 io.sockets.emit('update_users', users);
                 socket.broadcast.emit('update_console', 'SERVER', nickname
                     + ' s\'est déconnecté');
@@ -137,6 +160,3 @@ io.sockets.on('connection', function (socket) {
     });
 
 });
-
-
-

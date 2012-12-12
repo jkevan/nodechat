@@ -1,4 +1,4 @@
-String.prototype.replaceAll = function(stringToFind,stringToReplace)
+﻿String.prototype.replaceAll = function(stringToFind,stringToReplace)
 {
 	var temp = this;
 	var index = temp.indexOf(stringToFind);
@@ -22,4 +22,56 @@ findTextUri = function(messages){
 		}
 	}
 	return "";
+}
+
+userExist(users, nickname){
+	for(var room in users)
+	{
+		for(var user in room)
+		{
+			if(user == nickname)
+				return true;
+		}
+	}
+	return false;
+}
+
+String.prototype.startsWith = function(prefix) {
+	return this.indexOf(prefix) === 0;
+}
+
+function joinRoom(nickname, room, socket){
+	if(room)
+	{
+		if(!users[room])
+			users[room] = new Array();
+		users[room][nickname] = nickname;
+		socket.set("room", room);
+		socket.join(room);
+		io.sockets.in(room).emit('update_console', 'SERVER', nickname + ' est maintenant connecté');
+		console.log(nickname + ' a rejoint la room ' + room);
+		// Rediriger vers la conversation de la room
+	}
+	else
+	{
+		// Envoyer message erreur
+		console.log('le nom de room n\'est pas valide');
+	}
+}
+
+function saveMsg(nickname, msg, channel){
+    db.collection('talk', function (err, collection) {
+        collection.findOne({room: channel}, function(err, document){
+            if(document == null){
+                collection.insert({messages: [{nickname: nickname, msg: msg}],
+                    closed: false, room: channel, uri: ''});
+				console.log('IN '+ channel + ' ' + nickname + 'a envoyé ' + msg);
+            }else {
+                collection.update({room: channel}, {$push: {messages:
+                {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
+					console.log('UP '+ channel + ' ' + nickname + 'a envoyé ' + msg);
+                });
+            }
+        });
+    });
 }
