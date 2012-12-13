@@ -8,6 +8,7 @@
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('nodechat', server);
 var users = new Array();
+var liveTalks = new Array();
 
 eval(fs.readFileSync('function.js', encoding="ascii"));
 
@@ -29,11 +30,24 @@ app.router.get('/', function () {
 		});
 });
 
+app.router.get('/room/:uri_', function (uri_) {
+	var self = this;
+	fs.readFile('html/talk.html',
+		function (err, data) {
+			if (err) {
+				self.res.writeHead(500, { 'Content-Type': 'text/plain' });
+				return self.res.end('Error loading talk.html');
+			}
+
+			self.res.writeHead(200);
+			self.res.end(data);
+		});
+});
+
 app.start(8080);
 io = require('socket.io').listen(app.server);
 
 io.sockets.on('connection', function (socket) {
-
     socket.on('add_user', function(nickname, channel){
         socket.set("nickname", nickname);
 		joinRoom(nickname, channel, socket);
@@ -44,7 +58,7 @@ io.sockets.on('connection', function (socket) {
             if(!err){
 				if(data.startsWith("/join"))
 				{
-					joinRoom(nickname, data.split(" ", 2)[1], socket);
+					joinRoom(nickname, data.split(" ", 2)[1], socket, liveTalks[data.split(" ", 2)[1]].messages);
 				}
 				else if(data.startsWith("/quit"))
 				{
@@ -52,7 +66,7 @@ io.sockets.on('connection', function (socket) {
 				}
 				else
 				{
-					saveMsg(nickname, data, room);
+					saveMsg(nickname, data, room, liveTalks);
 				}
             }
 			else{
@@ -61,25 +75,11 @@ io.sockets.on('connection', function (socket) {
         });
     });
 
-	app.router.get('/room/:uri_', function (uri_) {
-		var self = this;
-		fs.readFile('html/talk.html',
-			function (err, data) {
-				if (err) {
-					self.res.writeHead(500, { 'Content-Type': 'text/plain' });
-					return self.res.end('Error loading talk.html');
-				}
-
-				self.res.writeHead(200);
-				self.res.end(data);
-			});
-	});
-
 	socket.on('disconnect', function(){
 		socket.get('room', function(err, room){
 			if(!err){
 				socket.get('nickname', function(err, nickname){
-					if(!err){
+					if(!err && nickname != null){
 						if(users[room][nickname])
 						{
 							delete users[room][nickname]; // Refaire en supprimant le mec de toutes les rooms
@@ -87,7 +87,10 @@ io.sockets.on('connection', function (socket) {
 						socket.broadcast.emit('update_console', 'SERVER', nickname + ' s\'est déconnecté');
 					}
 					else{
-						console.log(err);
+						if(err)
+							console.log(err);
+						if(nickname == null)
+							console.log("tentative de connection avec un nickname null")
 					}
 				});
 			}
