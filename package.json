@@ -6,6 +6,7 @@
 		"socket.io": "*",
 		"union": "*" ,
         "mongodb": "*",
-        "plates": "*"
+        "plates": "*",
+        "connect": "*"
 	}
 }

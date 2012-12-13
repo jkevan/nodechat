@@ -4,7 +4,8 @@
     mongo = require('mongodb'),
     Server = mongo.Server,
     plates = require('plates'),
-    Db = mongo.Db;
+    Db = mongo.Db,
+    connect = require('connect');
 
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('nodechat', server);
@@ -17,8 +18,9 @@ eval(fs.readFileSync('function.js', encoding="ascii"));
 eval(fs.readFileSync('templates.js', encoding="ascii"));
 
 app.use(flatiron.plugins.http, {
-	// HTTP options
-});
+    before: [
+        connect.static('static/')
+    ]});
 
 app.router.get('/', function () {
 	var self = this;
