@@ -28,6 +28,12 @@
         socket.on('update_console', function(nickname, msg){
             $("#console").append('<b>'+ nickname + ':</b> ' + msg + '<br>')
         });
+		
+		socket.on('new_room', function(channel){
+            $("#console").text('');
+			$("#channel").text(channel);
+			room = channel;
+        });
 
         socket.on('update_users', function(data){
             $('#users').empty();
@@ -40,7 +46,6 @@
             $('#send').click( function() {
                 var msg = $('#msg').val();
                 $('#msg').val('');
-
                 socket.emit('send_msg', msg, room);
             });
 

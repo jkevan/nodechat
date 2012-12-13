@@ -53,17 +53,7 @@ function joinRoom(nickname, channel, socket){
 		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel);
 		io.sockets.in(channel).emit('update_users', users[channel]);
 		console.log(nickname + ' a rejoint la room ' + channel);
-		
-		db.collection('talk', function (err, collection) {
-            collection.findOne({room:channel}, function(err, document){ // Voir pour changer ID
-                if(document != null){
-                    var oldMessages = document.messages;
-                    for(var i in oldMessages){
-                        socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
-                    }
-                }
-            });
-        });
+		loadMessages(channel, socket);
 		console.log(users[channel]);
 		// Rediriger vers la conversation de la room
 	}
@@ -74,23 +64,44 @@ function joinRoom(nickname, channel, socket){
 	}
 }
 
+function loadMessages(channel, socket){
+	socket.emit("new_room", channel);
+	db.collection('talk', function (err, collection) {
+		collection.findOne({room:channel}, function(err, document){ // Voir pour changer ID
+			if(document != null){
+				var oldMessages = document.messages;
+				for(var i in oldMessages){
+					socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
+				}
+			}
+		});
+	});
+}
+
 function quitRoom(nickname, channel, socket){
 	if(channel)
 	{
-		if(users[channel][nickname])
+		var found;
+		for(var user in users[channel]){
+            if(user == nickname)
+			{
+				socket.leave(channel);
+				found = user;
+				socket.emit('update_console', 'SERVER', 'vous êtes déconnecté de ' + channel);
+				console.log(nickname + ' a quitté la room ' + channel);
+				// Redirection vers une autre room (/quit) ou reste sur le même si /quit anotherroom
+				// var rooms = io.sockets.manager.roomClients[socket.id]; // Permet d'avoir la liste des rooms du mec
+				// Do not forget socket.set("room", otherchannel);
+			}
+        }
+		
+		if(found)
 		{
-			socket.leave(channel);
-			delete users[room][nickname];
+			delete users[room][found];
 			io.sockets.in(channel).emit('update_console', 'SERVER', nickname + ' a quitté la room');
 			io.sockets.in(channel).emit('update_users', users[channel]);
-			socket.emit('update_console', 'SERVER', 'vous êtes déconnecté de ' + channel);
-			console.log(nickname + ' a quitté la room ' + channel);
-			// Redirection vers une autre room (/quit) ou reste sur le même si /quit anotherroom
-			// var rooms = io.sockets.manager.roomClients[socket.id]; // Permet d'avoir la liste des rooms du mec
-			// Do not forget socket.set("room", otherchannel);
 		}
-		else
-		{
+		else{
 			socket.emit("update_console", 'SERVER', 'Vous ne faite pas partie de cette room');
 			console.log(nickname + ' ne fais pas partie de la room ' + channel);
 		}

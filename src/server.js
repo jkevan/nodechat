@@ -44,11 +44,11 @@ io.sockets.on('connection', function (socket) {
             if(!err){
 				if(data.startsWith("/join"))
 				{
-					joinRoom(nickname, data.split(" ", 2), socket);
+					joinRoom(nickname, data.split(" ", 2)[1], socket);
 				}
 				else if(data.startsWith("/quit"))
 				{
-					quitRoom(nickname, data.split(" ", 2), socket);			
+					quitRoom(nickname, data.split(" ", 2)[1], socket);			
 				}
 				else
 				{
