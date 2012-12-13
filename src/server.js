@@ -3,6 +3,7 @@
 	fs = require('fs'),
     mongo = require('mongodb'),
     Server = mongo.Server,
+    plates = require('plates'),
     Db = mongo.Db;
 
 var server = new Server('localhost', 27017, {auto_reconnect: true});
@@ -10,8 +11,10 @@ var db = new Db('nodechat', server);
 var users = new Array();
 var liveTalks = new Array();
 var savedTalks = new Array();
+var lastTalks = new Array();
 
 eval(fs.readFileSync('function.js', encoding="ascii"));
+eval(fs.readFileSync('templates.js', encoding="ascii"));
 
 app.use(flatiron.plugins.http, {
 	// HTTP options
@@ -45,12 +48,13 @@ app.router.get('/talk/:uri_', function (uri) {
 					if(err){
 						console.log(err)
 					}else{
-						var htmlMessages;
+						var htmlMessages = "";
 						for(var i in document.messages){
-							htmlMessages += "<b>" + document.messages[i].nickname + ":</b>" + document.messages[i].msg + "<br>";
+							htmlMessages += plates.bind(messageTemplate, document.messages[i]);
+                            console.log(htmlMessages);
 						}
 						self.res.writeHead(200);
-						self.res.end("<html><head></head><body>"+ htmlMessages +"</body></html>");
+						self.res.end(plates.bind(talkTemplate, {messages: htmlMessages}));
 					}
 				});
 			});

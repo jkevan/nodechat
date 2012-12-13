@@ -5,6 +5,7 @@
 		"flatiron": "*",
 		"socket.io": "*",
 		"union": "*" ,
-        "mongodb": "*"
+        "mongodb": "*",
+        "plates": "*"
 	}
 }
