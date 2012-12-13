@@ -130,6 +130,7 @@ function closeTalk(channel, socket){
 		var uri_ = findTextUri(liveTalks[channel].messages);
 		if(uri_){
 			collection.insert({room: channel, messages: liveTalks[channel].messages, uri: uri_},function(err, document){
+                allURIs.push(uri_);
 				if(savedTalks[channel] != null){
 					savedTalks[channel].talks.push({uri: uri_});
 				}else {
@@ -137,6 +138,7 @@ function closeTalk(channel, socket){
 				}
 				console.log(savedTalks[channel]);
 				liveTalks[channel].messages = [];
+
 				socket.emit("update_console", "SERVER", "discussion sauvegardé: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>", channel)
 			});
 		}else{
