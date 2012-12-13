@@ -40,7 +40,7 @@ String.prototype.startsWith = function(prefix) {
 	return this.indexOf(prefix) === 0;
 }
 
-function joinRoom(nickname, channel, socket){
+function joinRoom(nickname, channel, socket, messages){
 	if(channel)
 	{
 		console.log('--------------' + channel);
@@ -53,7 +53,7 @@ function joinRoom(nickname, channel, socket){
 		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel);
 		io.sockets.in(channel).emit('update_users', users[channel]);
 		console.log(nickname + ' a rejoint la room ' + channel);
-		loadMessages(channel, socket);
+		loadMessages(channel, socket, messages);
 		console.log(users[channel]);
 		// Rediriger vers la conversation de la room
 	}
@@ -64,18 +64,12 @@ function joinRoom(nickname, channel, socket){
 	}
 }
 
-function loadMessages(channel, socket){
+function loadMessages(channel, socket, messages){
 	socket.emit("new_room", channel);
-	db.collection('talk', function (err, collection) {
-		collection.findOne({room:channel}, function(err, document){ // Voir pour changer ID
-			if(document != null){
-				var oldMessages = document.messages;
-				for(var i in oldMessages){
-					socket.emit("update_console", oldMessages[i].nickname, oldMessages[i].msg);
-				}
-			}
-		});
-	});
+
+	for(var i in messages){
+		socket.emit("update_console", messages[i].nickname, messages[i].msg);
+	}
 }
 
 function quitRoom(nickname, channel, socket){
@@ -113,15 +107,24 @@ function quitRoom(nickname, channel, socket){
 	}
 }
 
-function saveMsg(nickname, msg, channel){
+function saveMsg(nickname, msg, channel, liveTalks){
 	io.sockets.in(channel).emit('update_console', nickname, msg);
 	console.log(channel + ' ' + nickname + ' a envoyé :' + msg);
-    db.collection('talk', function (err, collection) {
+	var talkTimeout;
+
+	if(liveTalks[channel] != null){
+		liveTalks[channel].messages.push({nickname:nickname, msg:msg});
+	}else {
+		liveTalks[channel] = {messages: [{nickname: nickname, msg: msg}], room: channel, uri: ''};
+	}
+
+    /*db.collection('talk', function (err, collection) {
         collection.findOne({room: channel}, function(err, document){
             if(document == null){
                 collection.insert({messages: [{nickname: nickname, msg: msg}],
-                    closed: false, room: channel, uri: ''});
-				console.log('IN '+ channel + ' ' + nickname + 'a envoyé ' + msg);
+                    closed: false, room: channel, uri: ''}, function(err){
+					console.log('IN '+ channel + ' ' + nickname + 'a envoyé ' + msg);
+				});
             }else {
                 collection.update({room: channel}, {$push: {messages:
                 {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
@@ -129,7 +132,7 @@ function saveMsg(nickname, msg, channel){
                 });
             }
         });
-    });
+    });*/
 }
 
 function closeTalk(channel){
