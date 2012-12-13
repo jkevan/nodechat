@@ -45,7 +45,7 @@ app.router.get('/talk/:uri_', function (uri) {
 					if(err){
 						console.log(err)
 					}else{
-						var htmlMessages;
+						var htmlMessages = "";
 						for(var i in document.messages){
 							htmlMessages += "<b>" + document.messages[i].nickname + ":</b>" + document.messages[i].msg + "<br>";
 						}
