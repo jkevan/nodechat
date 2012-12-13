@@ -43,14 +43,15 @@ String.prototype.startsWith = function(prefix) {
 function joinRoom(nickname, channel, socket){
 	if(channel)
 	{
+		console.log('--------------' + channel);
 		if(!users[channel])
 			users[channel] = new Array();
-		users[channel][nickname] = nickname;
+		users[channel][users[channel].length] = nickname;
 		socket.set("room", channel);
 		socket.join(channel);
 		io.sockets.in(channel).emit('update_console', 'SERVER', nickname + ' est maintenant connecté');
 		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel);
-		socket.emit('update_users', users[channel]);
+		io.sockets.in(channel).emit('update_users', users[channel]);
 		console.log(nickname + ' a rejoint la room ' + channel);
 		
 		db.collection('talk', function (err, collection) {

@@ -8,6 +8,7 @@
 		var room;
 		var nick;
         socket.on('connect', function(){
+			
 			$("#console").text("");
 			if(!connected)
 			{
@@ -17,7 +18,10 @@
 				}while(!nick && !room)
 				socket.emit("add_user", nick, room);
 				connected = true;
-				$("#send").removeAttr("disabled");
+				$("#warn_con").hide();
+				$("#form_send").removeAttr("hidden");
+				$("#channel").text(room);
+				$("#nickname").text(nick);
 			}
         });
 
@@ -28,7 +32,7 @@
         socket.on('update_users', function(data){
             $('#users').empty();
             $.each(data, function(key, value) {
-                $('#users').append('<div>' + key + '</div>');
+                $('#users').append('<div>' + value + '</div>');
             });
         });
 
@@ -50,13 +54,21 @@
 	</script>
 </head>
 <body>
+<div id="warn_con" width="400" height="300">
+<h3>Connexion au chat en cour ...</h3><br/>
+<h3>Veuillez patienter</h3>
+</div>
+<div id="form_send" hidden>
 	<p id="console">
 
 	</p>
     <div id="users">
 
     </div>
-    <label for="msg">message: </label><input type="text" width="90" id="msg">
-    <input type="button" value="send" id="send" disabled>
+	<p>Room :<span id="channel">Non connecté</span></p>
+	<p>Nickname :<span id="nickname">Non défini</span></p>
+    <label for="msg">Message: </label><textarea rows="4" cols="50" id="msg" placeholder="Ecrivez votre message ..."></textarea>
+    <input type="button" value="send" id="send">
+</div>
 </body>
 </html>
