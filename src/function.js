@@ -107,51 +107,39 @@ function quitRoom(nickname, channel, socket){
 	}
 }
 
-function saveMsg(nickname, msg, channel, liveTalks){
+function saveMsg(nickname, msg, channel, socket){
 	io.sockets.in(channel).emit('update_console', nickname, msg);
 	console.log(channel + ' ' + nickname + ' a envoyé :' + msg);
-	var talkTimeout;
+	var talkTimeout = setTimeout(function(){
+		console.log("channel timed out");
+		closeTalk(channel, socket);
+	}, 5000);
 
 	if(liveTalks[channel] != null){
 		liveTalks[channel].messages.push({nickname:nickname, msg:msg});
+		clearTimeout(liveTalks[channel].timeout);
+		liveTalks[channel].timeout = talkTimeout;
 	}else {
-		liveTalks[channel] = {messages: [{nickname: nickname, msg: msg}], room: channel, uri: ''};
+		liveTalks[channel] = {messages: [{nickname: nickname, msg: msg}], room: channel, timeout: talkTimeout};
 	}
-
-    /*db.collection('talk', function (err, collection) {
-        collection.findOne({room: channel}, function(err, document){
-            if(document == null){
-                collection.insert({messages: [{nickname: nickname, msg: msg}],
-                    closed: false, room: channel, uri: ''}, function(err){
-					console.log('IN '+ channel + ' ' + nickname + 'a envoyé ' + msg);
-				});
-            }else {
-                collection.update({room: channel}, {$push: {messages:
-                {nickname:nickname, msg:msg}}}, {safe: true},  function(err, doc){
-					console.log('UP '+ channel + ' ' + nickname + 'a envoyé ' + msg);
-                });
-            }
-        });
-    });*/
 }
 
-function closeTalk(channel){
+function closeTalk(channel, socket){
     db.collection('talk', function (err, collection) {
-        collection.findOne({room: channel}, function(err, document){
-            if(document != null){
-				var uri_ = findTextUri(document.messages);
-				if(uri_)
-				{
-					collection.update({room: channel}, {closed: true, uri:uri_}, {safe: true},  function(err, doc){
-						console.log('Fermeture de la room '+ channel);
-						console.log('l uri de ' + channel + ' est ' + uri_);
-					});
-					io.sockets.in(channel).emit("update_console", "SERVER", "La room " + channel + " est close. Retrouvez l'historique de la discussion à l'adresse suivante : <a href=\"/room/" + uri_ + "\">/room/" + uri_+ "</a>");
+		var uri_ = findTextUri(liveTalks[channel].messages);
+		if(uri_){
+			collection.insert({room: channel, messages: liveTalks[channel].messages, uri: uri_},function(err, document){
+				if(savedTalks[channel] != null){
+					savedTalks[channel].talks.push({uri: uri_});
+				}else {
+					savedTalks[channel] = {talks: [{uri: uri_}]};
 				}
-				else{
-					console.log('Impossible de générer l uri, aucunes phrases suppérieur à 5 mots.');
-				}
-            }
-        });
+				console.log(savedTalks[channel]);
+				liveTalks[channel].messages = [];
+				socket.emit("update_console", "SERVER", "discussion sauvegardé: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>")
+			});
+		}else{
+			console.log('Impossible de générer l uri, aucunes phrases suppérieur à 5 mots.');
+		}
     });
 }
