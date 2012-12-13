@@ -71,11 +71,11 @@ io.sockets.on('connection', function (socket) {
             if(!err){
 				if(data.startsWith("/join"))
 				{
-					joinRoom(nickname, data.split(" ", 2)[1], socket, liveTalks[data.split(" ", 2)[1]].messages);
+					joinRoom(nickname, data.split(" ", 2)[1], socket);
 				}
 				else if(data.startsWith("/quit"))
 				{
-					quitRoom(nickname, data.split(" ", 2)[1], socket);			
+					quitRoom(nickname, data.split(" ", 2)[1], socket, room);			
 				}
 				else
 				{
@@ -87,6 +87,12 @@ io.sockets.on('connection', function (socket) {
             }
         });
     });
+	
+	socket.on('switch_channel', function(channel){
+		if(liveTalks[channel])
+			loadMessages(channel, socket, liveTalks[channel].messages);
+		io.sockets.in(channel).emit('update_users', users[channel], channel);
+    });
 
 	socket.on('disconnect', function(){
 		socket.get('room', function(err, room){
@@ -97,7 +103,7 @@ io.sockets.on('connection', function (socket) {
 						{
 							delete users[room][nickname]; // Refaire en supprimant le mec de toutes les rooms
 						}
-						socket.broadcast.emit('update_console', 'SERVER', nickname + ' s\'est déconnecté');
+						socket.broadcast.emit('update_console', 'SERVER', nickname + ' s\'est déconnecté', room);
 					}
 					else{
 						if(err)
