@@ -53,7 +53,7 @@ function joinRoom(nickname, channel, socket){
 		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel);
 		io.sockets.in(channel).emit('update_users', users[channel]);
 		console.log(nickname + ' a rejoint la room ' + channel);
-        if(liveTalks)
+        if(liveTalks[channel])
 		    loadMessages(channel, socket, liveTalks[channel].messages);
 		console.log(users[channel]);
 		// Rediriger vers la conversation de la room
