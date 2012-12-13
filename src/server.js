@@ -9,6 +9,7 @@ var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('nodechat', server);
 var users = new Array();
 var liveTalks = new Array();
+var savedTalks = new Array();
 
 eval(fs.readFileSync('function.js', encoding="ascii"));
 
@@ -30,7 +31,7 @@ app.router.get('/', function () {
 		});
 });
 
-app.router.get('/room/:uri_', function (uri_) {
+app.router.get('/talk/:uri_', function (uri) {
 	var self = this;
 	fs.readFile('html/talk.html',
 		function (err, data) {
@@ -39,8 +40,20 @@ app.router.get('/room/:uri_', function (uri_) {
 				return self.res.end('Error loading talk.html');
 			}
 
-			self.res.writeHead(200);
-			self.res.end(data);
+			db.collection('talk', function (err, collection) {
+				collection.findOne({uri: uri}, function(err, document){
+					if(err){
+						console.log(err)
+					}else{
+						var htmlMessages;
+						for(var i in document.messages){
+							htmlMessages += "<b>" + document.messages[i].nickname + ":</b>" + document.messages[i].msg + "<br>";
+						}
+						self.res.writeHead(200);
+						self.res.end("<html><head></head><body>"+ htmlMessages +"</body></html>");
+					}
+				});
+			});
 		});
 });
 
@@ -66,7 +79,7 @@ io.sockets.on('connection', function (socket) {
 				}
 				else
 				{
-					saveMsg(nickname, data, room, liveTalks);
+					saveMsg(nickname, data, room, socket);
 				}
             }
 			else{
@@ -100,5 +113,3 @@ io.sockets.on('connection', function (socket) {
 		});
 	});
 });
-
- //closeTalk(room); // Voir Timer pas de message genre un timer avec callback par room
