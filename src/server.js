@@ -71,7 +71,7 @@ io.sockets.on('connection', function (socket) {
             if(!err){
 				if(data.startsWith("/join"))
 				{
-					joinRoom(nickname, data.split(" ", 2)[1], socket, liveTalks[data.split(" ", 2)[1]].messages);
+					joinRoom(nickname, data.split(" ", 2)[1], socket);
 				}
 				else if(data.startsWith("/quit"))
 				{

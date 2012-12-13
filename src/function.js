@@ -40,7 +40,7 @@ String.prototype.startsWith = function(prefix) {
 	return this.indexOf(prefix) === 0;
 }
 
-function joinRoom(nickname, channel, socket, messages){
+function joinRoom(nickname, channel, socket){
 	if(channel)
 	{
 		console.log('--------------' + channel);
@@ -53,7 +53,8 @@ function joinRoom(nickname, channel, socket, messages){
 		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel);
 		io.sockets.in(channel).emit('update_users', users[channel]);
 		console.log(nickname + ' a rejoint la room ' + channel);
-		loadMessages(channel, socket, messages);
+        if(liveTalks)
+		    loadMessages(channel, socket, liveTalks[channel].messages);
 		console.log(users[channel]);
 		// Rediriger vers la conversation de la room
 	}
