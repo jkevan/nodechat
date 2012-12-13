@@ -2,6 +2,7 @@
 <head>
 	<script src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.2.js"></script>
+	<link rel="icon" type="image/png" href="img/logo.jpg"> 
 	<script>
 		var socket = io.connect('http://localhost');
 		var connected = false;
@@ -15,7 +16,7 @@
 				do{
 					nick = prompt("Saisissez votre pseudo");
 					room = prompt("Saisissez votre ChatRoom");
-				}while(!nick && !room)
+				}while(!nick || !room)
 				socket.emit("add_user", nick, room);
 				connected = true;
 				$("#warn_con").hide();
@@ -59,6 +60,9 @@
 	</script>
 </head>
 <body>
+<div>
+<a href="http://127.0.0.1:8080"><img src="/img/logo.jpg"/></a><h1>Chat Room NodeJS !!</h1>
+</div
 <div id="warn_con" width="400" height="300">
 <h3>Connexion au chat en cour ...</h3><br/>
 <h3>Veuillez patienter</h3>
