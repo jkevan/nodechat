@@ -1,4 +1,4 @@
-var flatiron = require('flatiron'),
+﻿var flatiron = require('flatiron'),
 	app = flatiron.app,
 	fs = require('fs'),
     mongo = require('mongodb'),
@@ -99,7 +99,8 @@ db.collection('talk', function (err, collection) {
         for (var i in documents){
             allURIs.push(documents[i].uri);
         }
-		setInterval(importTweet, 2000);
+        //2minutes
+		setInterval(importTweet, 60000* 2);
         io.sockets.on('connection', function (socket) {
             socket.on('add_user', function(nickname, channel){
 				socket.set("nickname", nickname);

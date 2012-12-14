@@ -1,4 +1,4 @@
-String.prototype.replaceAll = function(stringToFind,stringToReplace)
+﻿String.prototype.replaceAll = function(stringToFind,stringToReplace)
 {
 	var temp = this;
 	var index = temp.indexOf(stringToFind);
@@ -113,7 +113,7 @@ function saveMsg(nickname, msg, channel, socket){
 		var talkTimeout = setTimeout(function(){
 			console.log("channel timed out");
 			closeTalk(channel);
-		}, 5000);
+		}, 60000*5);
 		
 		if(liveTalks[channel] != null){
 			liveTalks[channel].messages.push({nickname:nickname, msg:msg});
