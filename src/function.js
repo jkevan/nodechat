@@ -14,7 +14,7 @@ findTextUri = function(messages){
 	var tabMessages = messages;
 	for(var i in tabMessages)
 	{
-		if((tabMessages[i].msg.split(" ").length - 1) >= 5)
+		if((tabMessages[i].msg.split(" ").length) >= 5)
 		{
 			var uri_ = tabMessages[i].msg + '_' + tabMessages[i].nickname;
 			uri_ = uri_.replaceAll(" ","-")
@@ -40,75 +40,82 @@ String.prototype.startsWith = function(prefix) {
 	return this.indexOf(prefix) === 0;
 }
 
-function joinRoom(nickname, channel, socket, messages){
+function joinRoom(nickname, channel, socket){
 	if(channel)
 	{
-		console.log('--------------' + channel);
 		if(!users[channel])
 			users[channel] = new Array();
 		users[channel][users[channel].length] = nickname;
 		socket.set("room", channel);
 		socket.join(channel);
-		io.sockets.in(channel).emit('update_console', 'SERVER', nickname + ' est maintenant connecté');
-		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel);
-		io.sockets.in(channel).emit('update_users', users[channel]);
+		io.sockets.in(channel).emit('update_console', 'SERVER', nickname + ' est maintenant connecté', channel);
+		socket.emit('update_console', 'SERVER', 'vous êtes connecté sur ' + channel, channel);
+		io.sockets.in(channel).emit('update_users', users[channel], channel);
 		console.log(nickname + ' a rejoint la room ' + channel);
-		loadMessages(channel, socket, messages);
+		manageChannel('add', channel, socket);
+        if(liveTalks[channel])
+		    loadMessages(channel, socket, liveTalks[channel].messages);
 		console.log(users[channel]);
-		// Rediriger vers la conversation de la room
 	}
 	else
 	{
-		socket.emit("update_console", 'SERVER', 'le nom de room n\'est pas valide');
+		socket.emit("update_console", 'SERVER', 'le nom de room n\'est pas valide', channel);
 		console.log('le nom de room n\'est pas valide');
 	}
 }
 
-function loadMessages(channel, socket, messages){
-	socket.emit("new_room", channel);
+function manageChannel(action, channel, socket){
+	socket.emit("manage_channel", action, channel);
+	io.sockets.in(channel).emit('update_users', users[channel], channel);
+}
 
+function loadMessages(channel, socket, messages){
+	if(savedTalks[channel])
+	{
+		for(var i in savedTalks[channel].talks){
+			socket.emit("update_console", 'SERVER', 'Ancienne discussion : <a href=\'/talk/'+ savedTalks[channel].talks[i].uri + '\'>' + savedTalks[channel].talks[i].uri + '</a>', channel);
+		}
+	}
 	for(var i in messages){
-		socket.emit("update_console", messages[i].nickname, messages[i].msg);
+		socket.emit("update_console", messages[i].nickname, messages[i].msg, channel);
 	}
 }
 
-function quitRoom(nickname, channel, socket){
+function quitRoom(nickname, channel, socket, currentRoom){
 	if(channel)
 	{
 		var found;
-		for(var user in users[channel]){
-            if(user == nickname)
+		for(var i = 0; i<users[channel].length;i++){
+            if(users[channel][i] == nickname)
 			{
 				socket.leave(channel);
-				found = user;
-				socket.emit('update_console', 'SERVER', 'vous êtes déconnecté de ' + channel);
+				found = i;
+				manageChannel('del', channel, socket);
+				socket.emit('update_console', 'SERVER', 'vous êtes déconnecté de ' + channel, channel);
 				console.log(nickname + ' a quitté la room ' + channel);
-				// Redirection vers une autre room (/quit) ou reste sur le même si /quit anotherroom
-				// var rooms = io.sockets.manager.roomClients[socket.id]; // Permet d'avoir la liste des rooms du mec
-				// Do not forget socket.set("room", otherchannel);
 			}
         }
 		
-		if(found)
+		if(found != null)
 		{
-			delete users[room][found];
-			io.sockets.in(channel).emit('update_console', 'SERVER', nickname + ' a quitté la room');
-			io.sockets.in(channel).emit('update_users', users[channel]);
+			delete users[channel][found];
+			io.sockets.in(channel).emit('update_console', 'SERVER', nickname + ' a quitté la room', channel);
+			io.sockets.in(channel).emit('update_users', users[channel], channel);
 		}
 		else{
-			socket.emit("update_console", 'SERVER', 'Vous ne faite pas partie de cette room');
+			socket.emit("update_console", 'SERVER', 'Vous ne faite pas partie de cette room', channel);
 			console.log(nickname + ' ne fais pas partie de la room ' + channel);
 		}
 	}
 	else
 	{
-		socket.emit("update_console", 'SERVER', 'le nom de room n\'est pas valide');
+		socket.emit("update_console", 'SERVER', 'le nom de room n\'est pas valide', channel);
 		console.log('le nom de room n\'est pas valide');
 	}
 }
 
 function saveMsg(nickname, msg, channel, socket){
-	io.sockets.in(channel).emit('update_console', nickname, msg);
+	io.sockets.in(channel).emit('update_console', nickname, msg, channel);
 	console.log(channel + ' ' + nickname + ' a envoyé :' + msg);
 	var talkTimeout = setTimeout(function(){
 		console.log("channel timed out");
@@ -129,6 +136,7 @@ function closeTalk(channel, socket){
 		var uri_ = findTextUri(liveTalks[channel].messages);
 		if(uri_){
 			collection.insert({room: channel, messages: liveTalks[channel].messages, uri: uri_},function(err, document){
+                allURIs.push(uri_);
 				if(savedTalks[channel] != null){
 					savedTalks[channel].talks.push({uri: uri_});
 				}else {
@@ -136,10 +144,11 @@ function closeTalk(channel, socket){
 				}
 				console.log(savedTalks[channel]);
 				liveTalks[channel].messages = [];
-				socket.emit("update_console", "SERVER", "discussion sauvegardé: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>")
+
+				socket.emit("update_console", "SERVER", "discussion sauvegardée: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>", channel)
 			});
 		}else{
-			console.log('Impossible de générer l uri, aucunes phrases suppérieur à 5 mots.');
+			console.log('Impossible de générer l\'uri, aucunes phrases suppérieures à 5 mots.');
 		}
     });
 }

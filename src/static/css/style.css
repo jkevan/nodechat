@@ -1,0 +1,103 @@
+body
+{
+    font-family :  FreeMono, "Courier New", serif;
+    background-color : #2B2B2B;
+    color : #99cc99;
+    margin: auto;
+}
+
+a
+{
+    color : #66cc66;
+    text-decoration : none;
+}
+
+p{
+    margin: 0;
+}
+
+.clear{
+    clear:both;
+}
+
+.button{
+    font-weight: bold;
+    padding: 5px;
+    display: table-cell;
+    border: solid #9C9 2px;
+    color: #9C9;
+}
+
+.button:hover{
+    color: #2B2B2B;
+    background-color: #99cc99;
+}
+
+.button.current{
+    color: #2B2B2B;
+    background-color: #99cc99;
+}
+
+.raw{
+    float:left;
+    width: 100%;
+}
+
+.col{
+    float: left;
+    height: 100%;
+    overflow: auto;
+    padding: 10px;
+}
+
+#form_connect{
+    width: 227px;
+    height: 200px;
+    margin: 50px auto;
+    padding: 30px;
+    border: solid #9C9 1px;
+    border-radius: 10px;
+}
+
+#form_connect label{
+    float: left;
+}
+
+#form_connect input{
+    float: right;
+}
+
+#form_connect a#connect{
+    float: left;
+    margin-top: 25px;
+}
+
+#chat{
+    width: 900px;
+    display: none;
+    height: 500px;
+    margin: 15px auto;
+}
+
+#body{
+    height: 200px;
+}
+
+#head{
+    border-bottom: 1px solid;
+}
+
+#col1{
+    width: 710px;
+}
+
+#col2{
+    width: 149px;
+    border-left: 1px solid;
+}
+
+#li_button a{
+    float: left;
+    margin-right: 7px;
+
+}
