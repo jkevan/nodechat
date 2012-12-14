@@ -1,4 +1,4 @@
-﻿﻿var flatiron = require('flatiron'),
+﻿var flatiron = require('flatiron'),
 	app = flatiron.app,
 	fs = require('fs'),
     mongo = require('mongodb'),
@@ -54,6 +54,7 @@ app.router.get('/talk/:uri_', function (uri) {
                         var uri_prev_index = allURIs.indexOf(uri) != -1 ? allURIs.indexOf(uri) - 1 : null;
 						var htmlMessages = "";
 						for(var i in document.messages){
+							document.messages[i].nickname = "> " + document.messages[i].nickname;
 							htmlMessages += plates.bind(messageTemplate, document.messages[i]);
 						}
 

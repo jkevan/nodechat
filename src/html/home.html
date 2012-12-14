@@ -13,7 +13,6 @@
             var link = $("<a>" + name + "</a>").attr("href", "#").attr("id","ch_"+name).addClass("button").click(function(e){
                 e.preventDefault();
                 $("#console").text('');
-                $("#channel").text(name);
                 room = name;
                 socket.emit('switch_channel', name);
                 $("#li_button").find("a").removeClass("current");
@@ -47,7 +46,6 @@
 			{
 				addbutton(channel);
 				$("#console").text('');
-				$("#channel").text(channel);
 				room = channel;
                 $("#li_button").find("a").removeClass("current");
                 $("#ch_"+channel).addClass("current");
@@ -71,7 +69,6 @@
 
                     $("#form_connect").hide();
                     $("#chat").show();
-                    $("#channel").text(channel);
                     $("#nickname").text(nickname);
                 }
             });
@@ -92,12 +89,12 @@
 
             $('#send').click( function(e) {
                 e.preventDefault();
-                var msg = $('#msg').val();
-                $('#msg').val('');
+                var msg = $('#content').val();
+                $('#content').val('');
                 socket.emit('send_msg', msg, room);
             });
 
-            $('#msg').keypress(function(e) {
+            $('#content').keypress(function(e) {
                 if(e.which == 13) {
                     $(this).blur();
                     $('#send').focus().click();
@@ -108,7 +105,7 @@
 </head>
 <body>
 <div id="form_connect">
-    <h2> >NodeChannels </h2>
+    <img src="/img/logo.jpg" alt="logo">
     <label for="desired_nickname">pseudo: </label><input type="text" id="desired_nickname">
     <div class="clear"></div>
     <label for="desired_channel">room: </label><input type="text" id="desired_channel">
@@ -118,6 +115,12 @@
 
 <div id="chat">
     <div id="head" class="raw">
+        <div id="logo_header">
+            <a href="/">
+                <img src="/img/logo.jpg" alt="logo">
+            </a>
+        </div>
+        <div class="clear"></div>
         <div id="li_button"></div>
     </div>
     <div id="body" class="raw">
@@ -134,9 +137,8 @@
     </div>
     <div id="foot" class="raw">
         <div id="commands">
-            <p>Room :<span id="channel"></span></p>
             <p>Nickname :<span id="nickname"></span></p>
-            <label for="msg">Message: </label><textarea rows="4" cols="50" id="msg" placeholder="Ecrivez votre message ... Action: /join room  pour rejoindre une autre room ou /quit room  pour quitter la room"></textarea>
+            <textarea rows="2" cols="87" id="content" placeholder="Ecrivez votre message ... Action: /join room  pour rejoindre une autre room ou /quit room  pour quitter la room"></textarea>
             <a href="#" id="send" class="button">send</a>
         </div>
     </div>
