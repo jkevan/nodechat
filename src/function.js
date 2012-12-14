@@ -14,26 +14,17 @@ findTextUri = function(messages){
 	var tabMessages = messages;
 	for(var i in tabMessages)
 	{
-		if((tabMessages[i].msg.split(" ").length) >= 5)
+		if(tabMessages[i].nickname != 'Twitter')
 		{
-			var uri_ = tabMessages[i].msg + '_' + tabMessages[i].nickname;
-			uri_ = uri_.replaceAll(" ","-")
-			return	encodeURIComponent(uri_);
+			if((tabMessages[i].msg.split(" ").length) >= 5)
+			{
+				var uri_ = tabMessages[i].msg + '_' + tabMessages[i].nickname;
+				uri_ = uri_.replaceAll(" ","-")
+				return	encodeURIComponent(uri_);
+			}
 		}
 	}
 	return "";
-}
-
-function userExist(users, nickname){
-	for(var room in users)
-	{
-		for(var user in room)
-		{
-			if(user == nickname)
-				return true;
-		}
-	}
-	return false;
 }
 
 String.prototype.startsWith = function(prefix) {
@@ -117,21 +108,31 @@ function quitRoom(nickname, channel, socket, currentRoom){
 function saveMsg(nickname, msg, channel, socket){
 	io.sockets.in(channel).emit('update_console', nickname, msg, channel);
 	console.log(channel + ' ' + nickname + ' a envoyé :' + msg);
-	var talkTimeout = setTimeout(function(){
-		console.log("channel timed out");
-		closeTalk(channel, socket);
-	}, 5000);
-
-	if(liveTalks[channel] != null){
-		liveTalks[channel].messages.push({nickname:nickname, msg:msg});
-		clearTimeout(liveTalks[channel].timeout);
-		liveTalks[channel].timeout = talkTimeout;
-	}else {
-		liveTalks[channel] = {messages: [{nickname: nickname, msg: msg}], room: channel, timeout: talkTimeout};
+	if(nickname != 'Twitter')
+	{
+		var talkTimeout = setTimeout(function(){
+			console.log("channel timed out");
+			closeTalk(channel);
+		}, 5000);
+		
+		if(liveTalks[channel] != null){
+			liveTalks[channel].messages.push({nickname:nickname, msg:msg});
+			clearTimeout(liveTalks[channel].timeout);
+			liveTalks[channel].timeout = talkTimeout;
+		}else {
+			liveTalks[channel] = {messages: [{nickname: nickname, msg: msg}], room: channel, timeout: talkTimeout};
+		}
+	}
+	else{
+		if(liveTalks[channel] != null){
+			liveTalks[channel].messages.push({nickname:nickname, msg:msg});
+		}else {
+			liveTalks[channel] = {messages: [{nickname: nickname, msg: msg}], room: channel};
+		}
 	}
 }
 
-function closeTalk(channel, socket){
+function closeTalk(channel){
     db.collection('talk', function (err, collection) {
 		var uri_ = findTextUri(liveTalks[channel].messages);
 		if(uri_){
@@ -144,11 +145,33 @@ function closeTalk(channel, socket){
 				}
 				console.log(savedTalks[channel]);
 				liveTalks[channel].messages = [];
-
-				socket.emit("update_console", "SERVER", "discussion sauvegardée: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>", channel)
+				io.sockets.in(channel).emit('update_console', "SERVER", "discussion sauvegardée: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>", channel);
 			});
 		}else{
 			console.log('Impossible de générer l\'uri, aucunes phrases suppérieures à 5 mots.');
 		}
     });
+}
+
+function importTweet(){
+	for(var room in users){
+		var options = {
+			method: 'GET',
+			host: 'search.twitter.com',
+			path: '/search.json?q='+room
+		};
+		
+		var req = http.request(options, function(res) {
+			res.setEncoding('utf8');
+			var data = "";
+			res.on('data', function (chunk){
+				data += chunk;
+			});
+
+			res.on('end',function(){
+				var obj = JSON.parse(data);
+				saveMsg('Twitter', obj.results[Math.floor(Math.random()*obj.results.length)].text, room);
+			})
+		}).end();
+	}
 }

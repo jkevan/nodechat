@@ -2,6 +2,7 @@
 	app = flatiron.app,
 	fs = require('fs'),
     mongo = require('mongodb'),
+	http = require('http'),
     Server = mongo.Server,
     plates = require('plates'),
     Db = mongo.Db,
@@ -89,12 +90,12 @@ db.collection('talk', function (err, collection) {
         for (var i in documents){
             allURIs.push(documents[i].uri);
         }
-		
+		setInterval(importTweet, 2000);
         io.sockets.on('connection', function (socket) {
 		
             socket.on('add_user', function(nickname, channel){
-                socket.set("nickname", nickname);
-                joinRoom(nickname, channel, socket);
+				socket.set("nickname", nickname);
+				joinRoom(nickname, channel, socket);
             });
 
 			socket.on('send_msg', function(data, room){
@@ -110,7 +111,7 @@ db.collection('talk', function (err, collection) {
 						}
 						else
 						{
-							saveMsg(nickname, data, room, socket);
+							saveMsg(nickname, data, room);
 						}
 					}
 					else{
