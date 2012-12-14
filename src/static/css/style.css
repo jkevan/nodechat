@@ -52,7 +52,6 @@ p{
 
 #form_connect{
     width: 250px;
-    height: 200px;
     margin: 50px auto;
     padding: 30px;
     border: solid #9C9 1px;
@@ -140,4 +139,17 @@ p{
 
 #messages{
 	margin-top: 15px;
+}
+
+#lastTalks{
+	float: left;
+	width: 249px;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#lastTalksTitle{
+	float: left;
+	margin-top: 15px;
+	border-bottom: 1px solid;
 }
