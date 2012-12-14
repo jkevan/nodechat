@@ -14,7 +14,7 @@ findTextUri = function(messages){
 	var tabMessages = messages;
 	for(var i in tabMessages)
 	{
-		if((tabMessages[i].msg.split(" ").length - 1) >= 5)
+		if((tabMessages[i].msg.split(" ").length) >= 5)
 		{
 			var uri_ = tabMessages[i].msg + '_' + tabMessages[i].nickname;
 			uri_ = uri_.replaceAll(" ","-")
@@ -70,6 +70,12 @@ function manageChannel(action, channel, socket){
 }
 
 function loadMessages(channel, socket, messages){
+	if(savedTalks[channel])
+	{
+		for(var i in savedTalks[channel].talks){
+			socket.emit("update_console", 'SERVER', 'Ancienne discussion : <a href=\'/talk/'+ savedTalks[channel].talks[i].uri + '\'>' + savedTalks[channel].talks[i].uri + '</a>', channel);
+		}
+	}
 	for(var i in messages){
 		socket.emit("update_console", messages[i].nickname, messages[i].msg, channel);
 	}
@@ -139,10 +145,10 @@ function closeTalk(channel, socket){
 				console.log(savedTalks[channel]);
 				liveTalks[channel].messages = [];
 
-				socket.emit("update_console", "SERVER", "discussion sauvegardé: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>", channel)
+				socket.emit("update_console", "SERVER", "discussion sauvegardée: <a href='/talk/"+ uri_ +"'>"+ uri_ +"</a>", channel)
 			});
 		}else{
-			console.log('Impossible de générer l uri, aucunes phrases suppérieur à 5 mots.');
+			console.log('Impossible de générer l\'uri, aucunes phrases suppérieures à 5 mots.');
 		}
     });
 }
