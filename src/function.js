@@ -1,4 +1,4 @@
-﻿String.prototype.replaceAll = function(stringToFind,stringToReplace)
+String.prototype.replaceAll = function(stringToFind,stringToReplace)
 {
 	var temp = this;
 	var index = temp.indexOf(stringToFind);

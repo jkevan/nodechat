@@ -47,12 +47,11 @@ p{
     float: left;
     height: 100%;
     overflow: auto;
-    padding: 10px;
+	padding: 0 10px;
 }
 
 #form_connect{
-    width: 227px;
-    height: 200px;
+    width: 250px;
     margin: 50px auto;
     padding: 30px;
     border: solid #9C9 1px;
@@ -80,7 +79,7 @@ p{
 }
 
 #body{
-    height: 200px;
+    height: 260px;
 }
 
 #head{
@@ -96,8 +95,61 @@ p{
     border-left: 1px solid;
 }
 
+#logo{
+	float:left;
+	width: 100%;
+}
+
+#li_button{
+	float: left;
+	width: 100%;
+}
+
 #li_button a{
     float: left;
     margin-right: 7px;
 
+}
+
+#content {
+	float: left;
+}
+
+#send {
+	float: left;
+	margin-left: 5px;
+	padding: 7px 58px;
+}
+
+#talk{
+	width: 500px;
+	border: 1px solid;
+	border-radius: 10px;
+	margin: 39px auto;
+	padding: 20px;
+}
+
+#next{
+	float: right;
+}
+
+#prev{
+	float:left;
+}
+
+#messages{
+	margin-top: 15px;
+}
+
+#lastTalks{
+	float: left;
+	width: 249px;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#lastTalksTitle{
+	float: left;
+	margin-top: 15px;
+	border-bottom: 1px solid;
 }

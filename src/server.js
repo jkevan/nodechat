@@ -1,4 +1,4 @@
-﻿var flatiron = require('flatiron'),
+var flatiron = require('flatiron'),
 	app = flatiron.app,
 	fs = require('fs'),
     mongo = require('mongodb'),
@@ -32,8 +32,16 @@ app.router.get('/', function () {
 				return self.res.end('Error loading home.html');
 			}
 
+			var lastTalks = "";
+			for(var i = allURIs.length - 1; i >= (allURIs.length - 11); i --){
+				if(allURIs[i])
+				{
+					lastTalks += "<a href='/talk/" + allURIs[i] + "'>> " + allURIs[i] +  "</a><br>"
+				}
+			}
+
 			self.res.writeHead(200);
-			self.res.end(data);
+			self.res.end(plates.bind(data.toString(), {lastTalks: lastTalks}));
 		});
 });
 
@@ -55,6 +63,7 @@ app.router.get('/talk/:uri_', function (uri) {
                         var uri_prev_index = allURIs.indexOf(uri) != -1 ? allURIs.indexOf(uri) - 1 : null;
 						var htmlMessages = "";
 						for(var i in document.messages){
+							document.messages[i].nickname = "> " + document.messages[i].nickname;
 							htmlMessages += plates.bind(messageTemplate, document.messages[i]);
 						}
 
@@ -83,7 +92,7 @@ app.router.get('/talk/:uri_', function (uri) {
 });
 
 app.start(8080);
-io = require('socket.io').listen(app.server);
+io = require('socket.io').listen(app.server, {log:false});
 
 db.collection('talk', function (err, collection) {
     collection.find().toArray(function(err, documents){
@@ -92,7 +101,6 @@ db.collection('talk', function (err, collection) {
         }
 		setInterval(importTweet, 2000);
         io.sockets.on('connection', function (socket) {
-		
             socket.on('add_user', function(nickname, channel){
 				socket.set("nickname", nickname);
 				joinRoom(nickname, channel, socket);

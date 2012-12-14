@@ -5,61 +5,64 @@
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.2.js"></script>
 	<link rel="icon" type="image/png" href="img/logo.jpg"> 
 	<script>
-		var socket = io.connect('http://localhost');
-		var room;
-		var nick;
-		
-		function addbutton(name) {
-            var link = $("<a>" + name + "</a>").attr("href", "#").attr("id","ch_"+name).addClass("button").click(function(e){
-                e.preventDefault();
-                $("#console").text('');
-                $("#channel").text(name);
-                room = name;
-                socket.emit('switch_channel', name);
-                $("#li_button").find("a").removeClass("current");
-                $(this).addClass("current");
-            });
-            $("#li_button").append(link);
-		}
-		
-        socket.on('update_console', function(nickname, msg, checkroom){
-			if(checkroom == room)
-			{
-				$("#console").append('<b>> '+ nickname + ':</b> ' + msg + '<br>');
-			}
-        });
-
-        socket.on('update_users', function(data, checkroom){
-			if(checkroom == room)
-			{
-				$('#users').empty();
-				$.each(data, function(key, value) {
-					if(value)
-					{
-						$('#users').append('<div>' + value + '</div>');
-					}
-				});
-			}
-        });
-		
-		socket.on('manage_channel', function(action, channel){
-			if(action == 'add')
-			{
-				addbutton(channel);
-				$("#console").text('');
-				$("#channel").text(channel);
-				room = channel;
-                $("#li_button").find("a").removeClass("current");
-                $("#ch_"+channel).addClass("current");
-			}
-			if(action == 'del')
-			{
-				var parent = document.getElementById('li_button');
-				parent.removeChild(document.getElementById(channel));
-			}
-        });
-
         $(function(){
+            var socket = io.connect('http://localhost');
+            var room;
+            var nick;
+
+            function addbutton(name) {
+                var link = $("<a>" + name + "</a>").attr("href", "#").attr("id","ch_"+name).addClass("button").click(function(e){
+                    e.preventDefault();
+                    $("#console").text('');
+                    room = name;
+                    socket.emit('switch_channel', name);
+                    $("#li_button").find("a").removeClass("current");
+                    $(this).addClass("current");
+                });
+                $("#li_button").append(link);
+            }
+
+            socket.on('last_talks', function(data){
+                $("#lastTalks").empty();
+                $("#lastTalks").append(data);
+            });
+
+            socket.on('update_console', function(nickname, msg, checkroom){
+                if(checkroom == room)
+                {
+                    $("#console").append('<b>> '+ nickname + ':</b> ' + msg + '<br>');
+                }
+            });
+
+            socket.on('update_users', function(data, checkroom){
+                if(checkroom == room)
+                {
+                    $('#users').empty();
+                    $.each(data, function(key, value) {
+                        if(value)
+                        {
+                            $('#users').append('<div>' + value + '</div>');
+                        }
+                    });
+                }
+            });
+
+            socket.on('manage_channel', function(action, channel){
+                if(action == 'add')
+                {
+                    addbutton(channel);
+                    $("#console").text('');
+                    room = channel;
+                    $("#li_button").find("a").removeClass("current");
+                    $("#ch_"+channel).addClass("current");
+                }
+                if(action == 'del')
+                {
+                    var parent = document.getElementById('li_button');
+                    parent.removeChild(document.getElementById(channel));
+                }
+            });
+
             $('#connect').click(function(e){
                 e.preventDefault();
                 var nickname = $('#desired_nickname').val();
@@ -71,7 +74,6 @@
 
                     $("#form_connect").hide();
                     $("#chat").show();
-                    $("#channel").text(channel);
                     $("#nickname").text(nickname);
                 }
             });
@@ -92,12 +94,12 @@
 
             $('#send').click( function(e) {
                 e.preventDefault();
-                var msg = $('#msg').val();
-                $('#msg').val('');
+                var msg = $('#content').val();
+                $('#content').val('');
                 socket.emit('send_msg', msg, room);
             });
 
-            $('#msg').keypress(function(e) {
+            $('#content').keypress(function(e) {
                 if(e.which == 13) {
                     $(this).blur();
                     $('#send').focus().click();
@@ -108,16 +110,31 @@
 </head>
 <body>
 <div id="form_connect">
-    <h2> >NodeChannels </h2>
+    <img src="/img/logo.jpg" alt="logo">
     <label for="desired_nickname">pseudo: </label><input type="text" id="desired_nickname">
     <div class="clear"></div>
     <label for="desired_channel">room: </label><input type="text" id="desired_channel">
     <div class="clear"></div>
     <a href="#" id="connect" class="button">connect</a>
+    <div class="clear"></div>
+
+    <div id="lastTalksTitle">
+        <p>last talks:</p>
+    </div>
+    <div id="lastTalks">
+
+    </div>
+    <div class="clear"></div>
 </div>
 
 <div id="chat">
     <div id="head" class="raw">
+        <div id="logo_header">
+            <a href="/">
+                <img src="/img/logo.jpg" alt="logo">
+            </a>
+        </div>
+        <div class="clear"></div>
         <div id="li_button"></div>
     </div>
     <div id="body" class="raw">
@@ -134,9 +151,8 @@
     </div>
     <div id="foot" class="raw">
         <div id="commands">
-            <p>Room :<span id="channel"></span></p>
             <p>Nickname :<span id="nickname"></span></p>
-            <label for="msg">Message: </label><textarea rows="4" cols="50" id="msg" placeholder="Ecrivez votre message ... Action: /join room  pour rejoindre une autre room ou /quit room  pour quitter la room"></textarea>
+            <textarea rows="2" cols="87" id="content" placeholder="Ecrivez votre message ... Action: /join room  pour rejoindre une autre room ou /quit room  pour quitter la room"></textarea>
             <a href="#" id="send" class="button">send</a>
         </div>
     </div>
